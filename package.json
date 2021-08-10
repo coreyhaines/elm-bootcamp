@@ -1,0 +1,15 @@
+{
+  "name": "elm-bootcamp",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:coreyhaines/elm-bootcamp.git",
+  "author": "Corey Haines <coreyhaines@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "live": "elm-live -- --debug"
+  },
+  "dependencies": {
+    "elm": "^0.19.1-5",
+    "elm-live": "^4.0.2"
+  }
+}
