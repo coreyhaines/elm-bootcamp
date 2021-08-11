@@ -3,7 +3,7 @@ module Main exposing (main)
 import Browser
 import Html exposing (Html, button, div, input, text)
 import Html.Attributes exposing (value)
-import Html.Events exposing (onInput)
+import Html.Events exposing (onClick, onInput)
 
 
 type alias Flags =
@@ -23,22 +23,16 @@ type alias Task =
 
 type Message
     = NewTaskNameInput String
+    | AddTaskClicked
 
 
 
 -- Type inference
 
 
-initialTasks =
-    [ { name = "Clean my fridge" }
-    , { name = "Feed cats" }
-    , { name = "Change cat's water" }
-    ]
-
-
 init : Flags -> ( Model, Cmd Message )
 init _ =
-    ( { tasks = initialTasks
+    ( { tasks = []
       , newTaskName = ""
       }
     , Cmd.none
@@ -51,6 +45,14 @@ update msg model =
         NewTaskNameInput userInput ->
             ( { model
                 | newTaskName = userInput
+              }
+            , Cmd.none
+            )
+
+        AddTaskClicked ->
+            ( { model
+                | tasks = { name = model.newTaskName } :: model.tasks
+                , newTaskName = ""
               }
             , Cmd.none
             )
@@ -69,7 +71,8 @@ view model =
 
 addNewTaskView model =
     div []
-        [ input [ onInput NewTaskNameInput ] []
+        [ input [ onInput NewTaskNameInput, value model.newTaskName ] []
+        , button [ onClick AddTaskClicked ] [ text "Add" ]
         ]
 
 
