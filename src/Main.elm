@@ -50,12 +50,21 @@ update msg model =
             )
 
         AddTaskClicked ->
-            ( { model
-                | tasks = { name = model.newTaskName } :: model.tasks
-                , newTaskName = ""
-              }
+            ( addTask model
             , Cmd.none
             )
+
+
+addTask : Model -> Model
+addTask model =
+    if String.isEmpty model.newTaskName then
+        model
+
+    else
+        { model
+            | tasks = { name = model.newTaskName } :: model.tasks
+            , newTaskName = ""
+        }
 
 
 view : Model -> Browser.Document Message
