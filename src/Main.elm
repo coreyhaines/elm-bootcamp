@@ -1,8 +1,8 @@
 module Main exposing (main)
 
 import Browser
-import Html exposing (Html, button, div, input, text)
-import Html.Attributes exposing (value)
+import Html exposing (Html, button, div, input, span, text)
+import Html.Attributes exposing (..)
 import Html.Events exposing (onClick, onInput)
 
 
@@ -10,96 +10,157 @@ type alias Flags =
     {}
 
 
+type alias Task =
+    { name : TaskName
+    , id : TaskId
+    , description : TaskDescription
+    }
+
+
+type TaskName
+    = TaskName String
+
+
+type TaskDescription
+    = TaskDescription String
+
+
+type TaskId
+    = Id Int
+
+
 type alias Model =
     { tasks : List Task
-    , newTaskName : String
+    , newTaskName : TaskName
+    , newTaskDescription : TaskDescription
+    , nextTaskId : TaskId
     }
 
 
-type alias Task =
-    { name : String
-    }
+type Msg
+    = AddTaskName String
+    | AddTaskDescription String
+    | AddTask
+    | DeleteTask TaskId
 
 
-type Message
-    = NewTaskNameInput String
-    | AddTaskClicked
-
-
-
--- Type inference
-
-
-init : Flags -> ( Model, Cmd Message )
+init : Flags -> ( Model, Cmd Msg )
 init _ =
     ( { tasks = []
-      , newTaskName = ""
+      , newTaskName = TaskName ""
+      , newTaskDescription = TaskDescription ""
+      , nextTaskId = Id 1
       }
     , Cmd.none
     )
 
 
-update : Message -> Model -> ( Model, Cmd Message )
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        NewTaskNameInput userInput ->
+        AddTaskName newContent ->
+            ( { model | newTaskName = TaskName newContent }, Cmd.none )
+
+        AddTaskDescription inputTaskDescription ->
             ( { model
-                | newTaskName = userInput
+                | newTaskDescription = TaskDescription inputTaskDescription
               }
             , Cmd.none
             )
 
-        AddTaskClicked ->
-            ( addTask model
+        AddTask ->
+            if
+                String.isEmpty (taskNameToString model.newTaskName)
+                    || String.isEmpty (taskDescriptionToString model.newTaskDescription)
+            then
+                ( model, Cmd.none )
+
+            else
+                ( { model
+                    | tasks =
+                        { id = model.nextTaskId
+                        , name = model.newTaskName
+                        , description = model.newTaskDescription
+                        }
+                            :: model.tasks
+                    , newTaskName = TaskName ""
+                    , newTaskDescription = TaskDescription ""
+                    , nextTaskId = newTaskId model.nextTaskId
+                  }
+                , Cmd.none
+                )
+
+        DeleteTask taskIdToDelete ->
+            ( { model
+                | tasks = List.filter (\task -> task.id /= taskIdToDelete) model.tasks
+              }
             , Cmd.none
             )
 
 
-addTask : Model -> Model
-addTask model =
-    if String.isEmpty model.newTaskName then
-        model
-
-    else
-        { model
-            | tasks = { name = model.newTaskName } :: model.tasks
-            , newTaskName = ""
-        }
+taskNameToString : TaskName -> String
+taskNameToString (TaskName name) =
+    name
 
 
-view : Model -> Browser.Document Message
+taskDescriptionToString : TaskDescription -> String
+taskDescriptionToString (TaskDescription description) =
+    description
+
+
+newTaskId : TaskId -> TaskId
+newTaskId currentTaskId =
+    case currentTaskId of
+        Id id ->
+            Id (id + 1)
+
+
+view : Model -> Browser.Document Msg
 view model =
     { title = "Hello, Elm!"
     , body =
-        [ div [] [ text "Hello, FOLKS! Let's build a TODO app!" ]
-        , addNewTaskView model
-        , taskListView model
+        [ div [] [ text "Welcome! Here are your tasks for today:" ]
+        , div []
+            [ input
+                [ value (taskNameToString model.newTaskName)
+                , onInput AddTaskName
+                ]
+                []
+            , input
+                [ value (taskDescriptionToString model.newTaskDescription)
+                , onInput AddTaskDescription
+                ]
+                []
+            , button [ onClick AddTask ] [ text "Add" ]
+            ]
+        , div [] [ viewTaskList model ]
         ]
     }
 
 
-addNewTaskView model =
+viewTaskList : Model -> Html Msg
+viewTaskList model =
+    div [] (List.map viewTask model.tasks)
+
+
+viewTask : Task -> Html Msg
+viewTask task =
     div []
-        [ input [ onInput NewTaskNameInput, value model.newTaskName ] []
-        , button [ onClick AddTaskClicked ] [ text "Add" ]
+        [ span [ onClick (DeleteTask task.id) ] [ text "x" ]
+        , text " - "
+        , text (taskNameToString task.name)
+        , text ": "
+        , text (taskDescriptionToString task.description)
         ]
 
 
-taskListView model =
-    div [] (List.map taskView model.tasks)
-
-
-taskView task =
-    div [] [ text task.name ]
-
-
-{-| Browser.document : { init : Flags -> ( Model, Cmd Message )
-, update : Message -> Model -> ( Model, Cmd Message )
-, view : Model -> Document Message
-, subscriptions : Model -> Sub Message
-} -> Program Flags Model Message
+{-| Browser.document : { init : Flags -> ( Model, Cmd Msg )
+, update : Msg -> Model -> ( Model, Cmd Msg )
+, view : Model -> Document Msg
+, subscriptions : Model -> Sub Msg
+} -> Program Flags Model Msg
 -}
-main : Program Flags Model Message
+main : Program Flags Model Msg
 main =
     Browser.document
         { init = init
